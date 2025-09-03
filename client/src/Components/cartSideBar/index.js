@@ -1,13 +1,10 @@
+// src/Components/cartSideBar.js
+
 import React, { useContext } from "react";
 import { MyContext } from "../../App";
-import Drawer from "@mui/material/Drawer";
-import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import { MdClose } from "react-icons/md";
-import { RiDeleteBin6Line } from "react-icons/ri";
 import { Link } from "react-router-dom";
+import { RiDeleteBin6Line } from "react-icons/ri";
+import { MdClose } from "react-icons/md";
 
 const CartSidebar = () => {
   const context = useContext(MyContext);
@@ -18,115 +15,99 @@ const CartSidebar = () => {
   );
 
   return (
-    <Drawer
-      anchor="right"
-      open={context.isSidebarOpen}
-      onClose={() => context.setIsSidebarOpen(false)}
+    <div
+      className={`fixed top-0 right-0 h-full z-50 transition-transform duration-500 ease-in-out transform
+        ${context.isSidebarOpen ? "translate-x-0" : "translate-x-full"}
+        w-full sm:w-80 bg-stone-900 shadow-2xl flex flex-col`}
+      style={{ backdropFilter: "blur(5px)" }} // Add a subtle blur effect to the background
     >
-      <Box
-        sx={{
-          width: { xs: '100vw', sm: 350 }, // Full width on small screens, fixed on larger screens
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-        }}
-        role="presentation"
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            p: 2,
-            borderBottom: "1px solid #eee",
-          }}
-        >
-          <Typography variant="h6">My Shopping Cart</Typography>
-          <IconButton onClick={() => context.setIsSidebarOpen(false)}>
-            <MdClose />
-          </IconButton>
-        </Box>
+      {/* Dark overlay for outside click */}
+      {context.isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-40 transition-opacity duration-500"
+          onClick={() => context.setIsSidebarOpen(false)}
+        ></div>
+      )}
 
-        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
+      <div className="relative z-50 flex flex-col h-full bg-stone-900 text-gray-200">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-700">
+          <h2 className="text-xl font-bold tracking-wide uppercase">
+            My Shopping Cart
+          </h2>
+          <button
+            className="text-gray-400 hover:text-white transition-colors duration-200"
+            onClick={() => context.setIsSidebarOpen(false)}
+          >
+            <MdClose size={24} />
+          </button>
+        </div>
+
+        {/* Cart Items List */}
+        <div className="flex-grow overflow-y-auto px-6 py-4 custom-scrollbar">
           {context.cartItems.length === 0 ? (
-            <Box sx={{ textAlign: "center", pt: 5, color: "grey.500" }}>
+            <div className="text-center mt-12 text-gray-500 font-light">
               Your cart is empty.
-            </Box>
+            </div>
           ) : (
             context.cartItems.map((item) => (
-              <Box
+              <div
                 key={item._id}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  mb: 2,
-                  pb: 1,
-                  borderBottom: "1px solid #f0f0f0",
-                }}
+                className="flex items-center space-x-4 mb-4 pb-4 border-b border-gray-800 last:border-b-0 last:mb-0"
               >
-                <Box sx={{ width: 80, height: 80, mr: 2 }}>
+                <div className="w-16 h-16 flex-shrink-0 bg-white rounded-md overflow-hidden">
                   <img
                     src={item.images[0]}
                     alt={item.name}
-                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    className="w-full h-full object-contain"
                   />
-                </Box>
-                <Box sx={{ flexGrow: 1 }}>
+                </div>
+                <div className="flex-grow">
                   <Link
                     to={`/product/${item._id}`}
                     onClick={() => context.setIsSidebarOpen(false)}
-                    style={{ textDecoration: "none", color: "inherit" }}
+                    className="text-sm font-semibold hover:text-blue-500 transition-colors duration-200"
                   >
-                    <Typography variant="body1" component="h6" sx={{ fontSize: 14 }}>
-                      {item.name}
-                    </Typography>
+                    {item.name}
                   </Link>
-                  <Typography variant="body2" color="text.secondary">
+                  <p className="text-xs text-gray-400 mt-1">
                     R{item.price.toFixed(2)} x {item.quantity}
-                  </Typography>
-                </Box>
-                <IconButton onClick={() => context.removeCartItem(item._id)}>
-                  <RiDeleteBin6Line />
-                </IconButton>
-              </Box>
+                  </p>
+                </div>
+                <button
+                  className="text-gray-500 hover:text-red-500 transition-colors duration-200"
+                  onClick={() => context.removeCartItem(item._id)}
+                >
+                  <RiDeleteBin6Line size={20} />
+                </button>
+              </div>
             ))
           )}
-        </Box>
+        </div>
 
-        <Box sx={{ p: 2, borderTop: "1px solid #eee" }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6">Subtotal</Typography>
-            <Typography variant="h6">R{totalPrice.toFixed(2)}</Typography>
-          </Box>
-          <Button
-            variant="contained"
-            fullWidth
-            sx={{ mb: 1, backgroundColor: "#233a95", '&:hover': { backgroundColor: '#1a2a6b' } }}
-            component={Link}
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-700 bg-stone-800">
+          <div className="flex justify-between items-center mb-4 font-bold text-lg">
+            <span>Subtotal</span>
+            <span>R{totalPrice.toFixed(2)}</span>
+          </div>
+          <Link
             to="/cart"
             onClick={() => context.setIsSidebarOpen(false)}
+            className="w-full block text-center py-3 px-6 mb-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors duration-300 text-white font-semibold"
           >
             VIEW CART
-          </Button>
-          <Button
-            variant="contained"
-            component={Link}
+          </Link>
+          <Link
             to="/checkout"
-            fullWidth
-            sx={{ backgroundColor: "#38761d", '&:hover': { backgroundColor: '#2e5c17' } }}
+            onClick={() => context.setIsSidebarOpen(false)}
+            className="w-full block text-center py-3 px-6 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 text-white font-semibold"
           >
             SECURE CHECKOUT
-          </Button>
-        </Box>
-      </Box>
-    </Drawer>
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 };
 

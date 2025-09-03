@@ -5,10 +5,9 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { MyContext } from "../../App";
 import { motion } from 'framer-motion';
-import {
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box, IconButton, Button
-} from '@mui/material';
-import { DeleteOutline, Favorite, ShoppingCartOutlined, ArrowBack } from '@mui/icons-material';
+
+// Icons from react-icons
+import { FaHeart, FaTrash, FaShoppingCart, FaArrowLeft } from 'react-icons/fa';
 
 const Wishlist = () => {
     const context = useContext(MyContext);
@@ -87,7 +86,6 @@ const Wishlist = () => {
             );
 
             toast.success(response.data.message);
-            // Optionally remove from wishlist after adding to cart
             removeFromWishlist(item.productId);
         } catch (error) {
             console.error("Error adding to cart:", error);
@@ -96,7 +94,11 @@ const Wishlist = () => {
     };
 
     if (isLoading) {
-        return <div className="flex justify-center items-center min-h-screen bg-gray-50"><Typography variant="h5">Loading Wishlist...</Typography></div>;
+        return (
+            <div className="flex justify-center items-center min-h-screen bg-gray-50">
+                <h2 className="text-xl text-gray-700 font-semibold">Loading Wishlist...</h2>
+            </div>
+        );
     }
 
     return (
@@ -105,101 +107,104 @@ const Wishlist = () => {
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
-                className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 mb-10" // Proper margin top/bottom
+                className="container mx-auto px-4 sm:px-6 lg:px-8 mt-10 mb-10"
             >
                 <div className="flex justify-between items-center mb-12">
-                    <Typography variant="h4" className="font-bold text-red-600 flex items-center">
-                        My Wishlist 
-                        <img src="your-image-url-here" alt="Wishlist Icon" className="w-10 h-10 ml-4 rounded-full" />
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        startIcon={<ArrowBack />}
+                    <h1 className="text-4xl font-extrabold text-gray-800 flex items-center gap-4">
+                        My Wishlist
+                        <FaHeart className="text-red-500 text-3xl" />
+                    </h1>
+                    <button
                         onClick={() => navigate(-1)}
-                        className="bg-gray-500 hover:bg-gray-600 transition-colors duration-300 rounded-full"
+                        className="flex items-center gap-2 px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-semibold hover:bg-gray-300 transition-colors duration-300"
                     >
+                        <FaArrowLeft />
                         Back
-                    </Button>
+                    </button>
                 </div>
 
                 {wishlistItems.length === 0 ? (
-                    <Box className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg">
-                        <Favorite className="text-8xl text-red-400 mb-4 animate-pulse" />
-                        <Typography variant="h5" className="font-semibold text-gray-700 mb-2">
+                    <div className="flex flex-col items-center justify-center p-10 bg-white rounded-xl shadow-lg border border-red-200">
+                        <FaHeart className="text-8xl text-red-400 mb-4 animate-pulse" />
+                        <h2 className="text-2xl font-semibold text-gray-700 mb-2">
                             Your wishlist is empty.
-                        </Typography>
-                        <Typography className="text-gray-500 mb-6">
+                        </h2>
+                        <p className="text-gray-500 mb-6">
                             Start adding products you love to your wishlist!
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => navigate('/')}
-                            className="rounded-full"
+                        </p>
+                        <Link
+                            to="/"
+                            className="px-8 py-3 bg-red-600 text-white font-bold rounded-full shadow-lg hover:bg-red-700 transition-colors duration-300"
                         >
                             Start Shopping
-                        </Button>
-                    </Box>
+                        </Link>
+                    </div>
                 ) : (
-                    <Paper
-                        elevation={6}
-                        className="rounded-3xl overflow-hidden shadow-2xl transition-shadow duration-300 hover:shadow-3xl"
-                        style={{ border: '2px solid transparent', boxShadow: '0 0 15px 5px rgba(59, 130, 246, 0.5)' }} // Blue glow effect
-                    >
-                        <TableContainer>
-                            <Table aria-label="wishlist table">
-                                <TableHead className="bg-red-500">
-                                    <TableRow>
-                                        <TableCell><Typography className="font-bold text-white hover:text-gray-200 transition-colors">Image</Typography></TableCell>
-                                        <TableCell><Typography className="font-bold text-white hover:text-gray-200 transition-colors">Product</Typography></TableCell>
-                                        <TableCell><Typography className="font-bold text-white hover:text-gray-200 transition-colors">Category</Typography></TableCell>
-                                        <TableCell><Typography className="font-bold text-white hover:text-gray-200 transition-colors">Price</Typography></TableCell>
-                                        <TableCell align="center"><Typography className="font-bold text-white hover:text-gray-200 transition-colors">Actions</Typography></TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {wishlistItems.map((item) => (
-                                        <TableRow key={item._id} className="hover:bg-red-50 transition-colors">
-                                            <TableCell>
-                                                <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Link to={`/product/${item.productId}`}>
-                                                    <Typography className="text-blue-600 font-semibold hover:underline">
-                                                        {item.name}
-                                                    </Typography>
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Typography>{item.category}</Typography>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Typography className="font-bold text-green-600">R{item.price.toFixed(2)}</Typography>
-                                            </TableCell>
-                                            <TableCell align="center" className="space-x-2">
-                                                <Button
-                                                    variant="contained"
-                                                    size="small"
-                                                    startIcon={<ShoppingCartOutlined />}
+                    <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
+                        <table className="min-w-full table-auto">
+                            <thead className="bg-red-500">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                        Image
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                        Product
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider hidden md:table-cell">
+                                        Category
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                        Price
+                                    </th>
+                                    <th className="px-6 py-3 text-center text-xs font-bold text-white uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {wishlistItems.map((item) => (
+                                    <tr key={item._id} className="hover:bg-red-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                className="w-20 h-20 object-cover rounded-lg"
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <Link to={`/product/${item.productId}`} className="text-red-600 hover:underline font-semibold">
+                                                {item.name}
+                                            </Link>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell text-gray-600">
+                                            {item.category}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap font-bold text-green-600">
+                                            R{item.price.toFixed(2)}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <div className="flex justify-center items-center space-x-2">
+                                                <button
                                                     onClick={() => addToCart(item)}
-                                                    className="bg-purple-600 hover:bg-purple-700 transition-colors duration-300 rounded-full"
+                                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-full font-semibold text-sm hover:bg-purple-700 transition-colors duration-300"
                                                 >
-                                                    Add to Cart
-                                                </Button>
-                                                <IconButton
+                                                    <FaShoppingCart />
+                                                    <span className="hidden sm:inline">Add to Cart</span>
+                                                </button>
+                                                <button
                                                     onClick={() => removeFromWishlist(item.productId)}
-                                                    aria-label="unheart"
-                                                    color="secondary"
+                                                    className="p-3 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors duration-300"
+                                                    aria-label="Remove from wishlist"
                                                 >
-                                                    <Favorite style={{ color: '#E53E3E' }} />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Paper>
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </motion.div>
         </div>

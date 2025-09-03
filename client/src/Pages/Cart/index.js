@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
-import Rating from "@mui/material/Rating";
-import QuantityBox from "../../Components/QuantityBox";
 import { IoIosClose } from "react-icons/io";
-import Button from "@mui/material/Button";
 import { IoCartSharp } from "react-icons/io5";
+import { FaStar, FaStarHalfAlt, FaRegStar } from 'react-icons/fa'; // For a custom rating component
+import QuantityBox from "../../Components/QuantityBox";
 import { useContext } from "react";
 import { MyContext } from "../../App";
 
@@ -29,69 +28,89 @@ const Cart = () => {
     0
   ).toFixed(2);
 
+  // Custom Rating component using react-icons
+  const Rating = ({ value }) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      if (i <= value) {
+        stars.push(<FaStar key={i} className="text-yellow-500" />);
+      } else if (i - 0.5 === value) {
+        stars.push(<FaStarHalfAlt key={i} className="text-yellow-500" />);
+      } else {
+        stars.push(<FaRegStar key={i} className="text-gray-300" />);
+      }
+    }
+    return <div className="flex text-sm">{stars}</div>;
+  };
+
   return (
-    <>
-      <section className="section cartPage">
-        <div className="container">
-          <h2 className="hd mb-1">Your Cart</h2>
-          <p>
-            There are <b className="text-red">{context.cartItems?.length || 0}</b> products in your cart
-          </p>
-          <div className="row">
-            <div className="col-md-9 pr-5">
-              <div className="table-responsive">
-                <table className="table">
-                  <thead>
+    <section className="bg-gray-100 py-8 sm:py-12 min-h-[calc(100vh-200px)]">
+      <div className="container mx-auto px-4 max-w-7xl">
+        <h2 className="text-4xl font-extrabold text-gray-800 mb-2">Your Cart</h2>
+        <p className="text-gray-600 mb-8">
+          There are <b className="text-blue-600">{context.cartItems?.length || 0}</b> products in your cart
+        </p>
+
+        {context.cartItems?.length === 0 ? (
+          <div className="bg-white p-8 rounded-lg shadow-md text-center">
+            <p className="text-lg text-gray-500">Your cart is empty.</p>
+            <Link to="/" className="mt-4 inline-block text-blue-600 hover:underline">
+              Start Shopping
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Cart Items Table */}
+            <div className="lg:col-span-2">
+              <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <th width="35%">Product</th>
-                      <th width="15%">Unit Price</th>
-                      <th width="25%">Quantity</th>
-                      <th width="15%">Subtotal</th>
-                      <th width="10%">Remove</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Remove</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {context.cartItems?.map((item) => (
-                      <tr key={item._id}>
-                        <td width="35%">
-                          <Link to={`/product/${item._id}`}>
-                            <div className="d-flex align-items-center cartItemimgWrapper">
-                              <div className="imgWrapper">
-                                <img
-                                  src={item.images[0]}
-                                  alt={item.name}
-                                  className="w-100"
-                                />
-                              </div>
-                              <div className="info px-3">
-                                <h6>{item.name}</h6>
-                                <Rating
-                                  name="read-only"
-                                  value={item.rating}
-                                  precision={0.5}
-                                  size="small"
-                                  readOnly
-                                />
-                              </div>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {context.cartItems.map((item) => (
+                      <tr key={item._id} className="hover:bg-gray-50 transition-colors duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Link to={`/product/${item._id}`} className="flex items-center">
+                            <div className="flex-shrink-0 h-16 w-16 mr-4">
+                              <img
+                                className="h-full w-full object-cover rounded-md"
+                                src={item.images[0]}
+                                alt={item.name}
+                              />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-900 line-clamp-2">{item.name}</span>
+                              <Rating value={item.rating} />
                             </div>
                           </Link>
                         </td>
-                        <td width="15%">R{item.price.toFixed(2)}</td>
-                        <td width="25%">
-                          <QuantityBox 
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                          R{item.price.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <QuantityBox
                             item={item}
                             quantity={item.quantity}
                             onQuantityChange={(newQuantity) => updateQuantity(item._id, newQuantity)}
                           />
                         </td>
-                        <td width="15%">R{(item.price * item.quantity).toFixed(2)}</td>
-                        <td width="10%">
-                          <span
-                            className="remove"
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-gray-900">
+                          R{(item.price * item.quantity).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <button
+                            className="text-gray-400 hover:text-red-500 transition-colors duration-200"
                             onClick={() => removeItem(item._id)}
                           >
-                            <IoIosClose />
-                          </span>
+                            <IoIosClose className="h-6 w-6" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -100,45 +119,46 @@ const Cart = () => {
               </div>
             </div>
 
-            <div className="col-md-3">
-              <div className="card border shadow p-3 cartDetails">
-                <h4>CART TOTALS</h4>
-                <div className="d-flex align-items-center mb-3">
-                  <span>Subtotal</span>
-                  <span className="ml-auto text-red font-weight-bold">
-                    R{totalPrice}
-                  </span>
+            {/* Cart Totals Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-white p-6 rounded-lg shadow-md sticky top-8">
+                <h4 className="text-xl font-bold text-gray-800 mb-6">CART TOTALS</h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Subtotal</span>
+                    <strong className="text-lg text-blue-600">R{totalPrice}</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Shipping</span>
+                    <span className="text-gray-800">Free</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Estimate for</span>
+                    <span className="font-semibold text-gray-800">
+                      Johannesburg
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-t pt-4 border-gray-200">
+                    <span className="text-lg font-bold text-gray-800">Total</span>
+                    <span className="text-xl font-extrabold text-blue-600">
+                      R{totalPrice}
+                    </span>
+                  </div>
                 </div>
-                <div className="d-flex align-items-center mb-3">
-                  <span>Shipping</span>
-                  <span className="ml-auto">Free</span>
+                <div className="mt-8">
+                  <Link to="/checkout" className="block text-center">
+                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-300">
+                      <IoCartSharp className="h-5 w-5 mr-2" />
+                      PROCEED TO CHECKOUT
+                    </button>
+                  </Link>
                 </div>
-                <div className="d-flex align-items-center mb-3">
-                  <span>Estimate for</span>
-                  <span className="ml-auto">
-                    <b>Johannesburg</b>
-                  </span>
-                </div>
-                <div className="d-flex align-items-center">
-                  <span>Total</span>
-                  <span className="ml-auto text-red font-weight-bold">
-                    R{totalPrice}
-                  </span>
-                </div>
-                <br />
-                {/* The link is now set up correctly */}
-                <Link to="/checkout" style={{ textDecoration: 'none' }}>
-                  <Button className="btn-blue bg-red btn-lg btn-big">
-                    <IoCartSharp />
-                    PROCEED TO CHECKOUT
-                  </Button>
-                </Link>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-    </>
+        )}
+      </div>
+    </section>
   );
 };
 

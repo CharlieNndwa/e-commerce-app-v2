@@ -13,7 +13,6 @@ import Header from "./Components/Header";
 import ProductModal from "./Components/ProductModal";
 import Footer from "./Components/Footer";
 import CartSidebar from "./Components/cartSideBar";
-import { PRODUCTS } from "./Components/data/productsData";
 
 // Lazy-loaded page components
 const Home = lazy(() => import("./Pages/Home"));
@@ -56,11 +55,11 @@ const FallbackLoader = () => (
 );
 
 function App() {
-    const [cityList, setCityList] = useState([]);
     const [isOpenProductModal, setisOpenProductModal] = useState(false);
     const [isHeaderFooterShow, setisHeaderFooterShow] = useState(true);
     const [productModalData, setProductModalData] = useState({});
     const [productList, setProductList] = useState([]);
+    const [categoryList, setCategoryList] = useState([]);
     const [isReady, setIsReady] = useState(false);
     const [cartItems, setCartItems] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -111,7 +110,8 @@ function App() {
         try {
             const token = localStorage.getItem('token');
             if (token) {
-                const sanitizedCart = cartData.map(({ _id, quantity }) => ({ productId: _id, quantity }));
+                // Adjusting to Platzi API's 'id' field
+                const sanitizedCart = cartData.map(({ id, quantity }) => ({ productId: id, quantity }));
                 await axios.post(
                     "http://localhost:8080/cart",
                     { cartItems: sanitizedCart },
@@ -132,7 +132,8 @@ function App() {
                 });
                 if (response.data.cart) {
                     const fetchedCartItems = response.data.cart.map(item => {
-                        const product = PRODUCTS.find(p => p._id.toString() === item.productId);
+                        // Finding product with 'id' from Platzi API
+                        const product = productList.find(p => p.id.toString() === item.productId);
                         return product ? { ...product, quantity: item.quantity } : null;
                     }).filter(Boolean);
                     setCartItems(fetchedCartItems);
@@ -146,11 +147,12 @@ function App() {
     };
 
     const addToCart = (product, quantity = 1) => {
-        const existingItem = cartItems.find((item) => item._id === product._id);
+        // Adjusting to Platzi API's 'id' field
+        const existingItem = cartItems.find((item) => item.id === product.id);
         let updatedCart;
         if (existingItem) {
             updatedCart = cartItems.map((item) =>
-                item._id === product._id
+                item.id === product.id
                     ? { ...existingItem, quantity: existingItem.quantity + quantity }
                     : item
             );
@@ -158,11 +160,12 @@ function App() {
             updatedCart = [...cartItems, { ...product, quantity }];
         }
         setCartItems(updatedCart);
-        toast.success(`${product.name} added to cart!`);
+        // Adjusting to Platzi API's 'title' field
+        toast.success(`${product.title} added to cart!`);
     };
 
     const removeCartItem = (productId) => {
-        const updatedCart = cartItems.filter((item) => item._id !== productId);
+        const updatedCart = cartItems.filter((item) => item.id !== productId);
         setCartItems(updatedCart);
         if (isLogin) {
             saveCartToBackend(updatedCart);
@@ -171,24 +174,39 @@ function App() {
 
     const updateQuantity = (productId, newQuantity) => {
         const updatedCart = cartItems.map((item) =>
-            item._id === productId ? { ...item, quantity: newQuantity } : item
+            item.id === productId ? { ...item, quantity: newQuantity } : item
         );
         setCartItems(updatedCart);
         if (isLogin) {
             saveCartToBackend(updatedCart);
         }
     };
+    
+    // Function to fetch products from Platzi API
+    const fetchAllProducts = async () => {
+        try {
+            const response = await axios.get('https://api.escuelajs.co/api/v1/products?offset=0&limit=200');
+            setProductList(response.data);
+            setIsReady(true);
+        } catch (error) {
+            console.error("Error fetching products:", error);
+            setIsReady(false);
+        }
+    };
 
-    const getCities = (url) => {
-        axios.post(url, { country: "South Africa" }).then((res) => {
-            setCityList(res.data.data);
-        });
+    // Function to fetch categories from Platzi API
+    const fetchCategories = async () => {
+        try {
+            const response = await axios.get('https://api.escuelajs.co/api/v1/categories?offset=0&limit=10');
+            setCategoryList(response.data);
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
     };
 
     useEffect(() => {
-        setProductList(PRODUCTS);
-        setIsReady(true);
-        getCities("https://countriesnow.space/api/v0.1/countries/cities");
+        fetchAllProducts();
+        fetchCategories();
     }, []);
 
     useEffect(() => {
@@ -204,14 +222,14 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (isLogin) {
+        if (isLogin && isReady) {
             fetchCartFromBackend();
             fetchUserWishlist();
-        } else {
+        } else if (!isLogin) {
             setCartItems([]);
             setUserWishlist([]);
         }
-    }, [isLogin]);
+    }, [isLogin, isReady]);
 
     useEffect(() => {
         if (isLogin) {
@@ -220,7 +238,6 @@ function App() {
     }, [cartItems, isLogin]);
 
     const values = {
-        cityList,
         isOpenProductModal,
         setisOpenProductModal,
         isHeaderFooterShow,
@@ -233,6 +250,7 @@ function App() {
         setProductModalData,
         productList,
         setProductList,
+        categoryList,
         isReady,
         cartItems,
         setCartItems,
@@ -249,30 +267,32 @@ function App() {
     return (
         <MyContext.Provider value={values}>
             {isHeaderFooterShow && <Header />}
-            <Suspense fallback={<FallbackLoader />}>
-                <Routes>
-                    <Route path="/" exact element={<Home />} />
-                    <Route path="/allproducts" element={<AllProducts />} />
-                    <Route path="/products/:category" element={<AllProducts />} />
-                    <Route path="/product/:productId" element={<ProductDetails />} />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/sign-in" element={<SignIn handleLogin={handleLogin} />} />
-                    <Route path="/sign-up" element={<SignUp handleLogin={handleLogin} />} />
-                    <Route path="/orders" element={<OrdersPage />} />
-                    <Route path="/checkout" element={<CheckoutPage />} />
-                    <Route path="/wishlist" element={<WishlistPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/refund-returns" element={<Refunds />} />
-                    <Route path="/terms-and-conditions" element={<Terms />} />
-                    <Route path="/about-us" element={<AboutUs />} />
-                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="/payments" element={<PaymentsPage />} />
-                    <Route path="/queries" element={<QueriesPage />} />
-                    <Route path="/contact-us" element={<ContactUs />} />
-                    <Route path="/careers" element={<Careers />} />
-                    <Route path="/competitions" element={<Competitions />} />
-                </Routes>
-            </Suspense>
+            <div className="content-area">
+                <Suspense fallback={<FallbackLoader />}>
+                    <Routes>
+                        <Route path="/" exact element={<Home />} />
+                        <Route path="/allproducts" element={<AllProducts />} />
+                        <Route path="/products/:category" element={<AllProducts />} />
+                        <Route path="/product/:productId" element={<ProductDetails />} />
+                        <Route path="/cart" element={<Cart />} />
+                        <Route path="/sign-in" element={<SignIn handleLogin={handleLogin} />} />
+                        <Route path="/sign-up" element={<SignUp handleLogin={handleLogin} />} />
+                        <Route path="/orders" element={<OrdersPage />} />
+                        <Route path="/checkout" element={<CheckoutPage />} />
+                        <Route path="/wishlist" element={<WishlistPage />} />
+                        <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="/refund-returns" element={<Refunds />} />
+                        <Route path="/terms-and-conditions" element={<Terms />} />
+                        <Route path="/about-us" element={<AboutUs />} />
+                        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                        <Route path="/payments" element={<PaymentsPage />} />
+                        <Route path="/queries" element={<QueriesPage />} />
+                        <Route path="/contact-us" element={<ContactUs />} />
+                        <Route path="/careers" element={<Careers />} />
+                        <Route path="/competitions" element={<Competitions />} />
+                    </Routes>
+                </Suspense>
+            </div>
             {isHeaderFooterShow && <Footer />}
             {isOpenProductModal && <ProductModal />}
             <Toaster position="top-center" reverseOrder={false} />

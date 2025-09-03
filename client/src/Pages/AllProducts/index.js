@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Button, Menu, MenuItem, Pagination } from "@mui/material";
+import { Link, useParams } from "react-router-dom";
 import { IoIosMenu } from "react-icons/io";
 import { TfiLayoutGrid4Alt } from "react-icons/tfi";
 import { FaAngleDown } from "react-icons/fa6";
 import Sidebar from "../../Components/SideBar";
 import ProductItem from "../../Components/ProductItem";
-import { PRODUCTS } from "../../Components/data/productsData";
-import { useParams } from "react-router-dom";
+import { fetchProducts } from "../../services/productService";
 
 // Import your dynamic banner images
 import appliancesBanner from "../../assets/images/s.jpg";
@@ -15,13 +14,12 @@ import homeKitchenBanner from "../../assets/images/z.png";
 import groceriesBanner from "../../assets/images/f.jpg";
 import defaultBanner from "../../assets/images/t.png";
 
-// Map slugs to the correct banner images
 const categoryBanners = {
     "appliances": appliancesBanner,
     "electronics": electronicsBanner,
     "home-and-kitchen": homeKitchenBanner,
     "groceries": groceriesBanner,
-    "allproducts": defaultBanner, // You can set a specific banner for the 'allproducts' page
+    "allproducts": defaultBanner,
 };
 
 const slugify = (str) =>
@@ -36,53 +34,67 @@ const slugify = (str) =>
 const AllProducts = () => {
     const { category } = useParams();
 
+    // State for API data and loading
+    const [allProducts, setAllProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // State for component UI and filtering
     const [productView, setProductView] = useState("grid");
     const [sortOption, setSortOption] = useState("default");
-    const [filteredProducts, setFilteredProducts] = useState(PRODUCTS || []);
+    const [filteredProducts, setFilteredProducts] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const productsPerPage = 12;
     const [sortAnchorEl, setSortAnchorEl] = useState(null);
     const openSortMenu = Boolean(sortAnchorEl);
 
-    const maxPrice = PRODUCTS.length > 0 ? Math.max(...PRODUCTS.map(p => p.price)) : 0;
-    const [priceRange, setPriceRange] = useState([0, maxPrice]);
-    const [inStockOnly, setInStockOnly] = useState(false);
-    const [showOutOfStock, setShowOutOfStock] = useState(false);
+    // Initial price range will be based on fetched data
+    const [priceRange, setPriceRange] = useState([0, 1000]);
 
-    const getCategoryCounts = useCallback(() => {
-        const counts = {};
-        PRODUCTS.forEach(product => {
-            if (product.category) {
-                const slug = slugify(product.category);
-                counts[slug] = (counts[slug] || 0) + 1;
-            }
-        });
-        return counts;
-    }, []);
+    // Fetch products from the Platzi API
+    const getProducts = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const products = await fetchProducts({
+                categorySlug: category,
+                limit: 200, // Fetch a larger set of products
+            });
+            setAllProducts(products);
 
-    const categoryCounts = getCategoryCounts();
+            // Set initial price range based on fetched products
+            const maxPrice = products.length > 0 ? Math.max(...products.map(p => p.price)) : 1000;
+            setPriceRange([0, maxPrice]);
 
+        } catch (err) {
+            console.error("Failed to fetch products:", err);
+            setError("Failed to load products. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
+    }, [category]);
+
+    useEffect(() => {
+        getProducts();
+    }, [getProducts]);
+
+    // This hook applies filters and sorting whenever dependencies change
     const applyFiltersAndSort = useCallback(() => {
-        let tempProducts = PRODUCTS ? [...PRODUCTS] : [];
+        let tempProducts = [...allProducts];
 
+        // Apply Category Filter
         if (category && category !== 'allproducts') {
             tempProducts = tempProducts.filter(
-                (product) => product.category && slugify(product.category) === category
+                (product) => product.category && slugify(product.category.name) === category
             );
         }
 
+        // Apply Price Range Filter
         tempProducts = tempProducts.filter(
-            (product) =>
-                product.price >= priceRange[0] &&
-                product.price <= priceRange[1]
+            (product) => product.price >= priceRange[0] && product.price <= priceRange[1]
         );
 
-        if (inStockOnly) {
-            tempProducts = tempProducts.filter((product) => product.inStock);
-        } else if (showOutOfStock) {
-            tempProducts = tempProducts.filter((product) => !product.inStock);
-        }
-
+        // Apply Sorting
         switch (sortOption) {
             case "price-low-to-high":
                 tempProducts.sort((a, b) => a.price - b.price);
@@ -91,50 +103,45 @@ const AllProducts = () => {
                 tempProducts.sort((a, b) => b.price - a.price);
                 break;
             case "A-Z":
-                tempProducts.sort((a, b) => a.name.localeCompare(b.name));
+                tempProducts.sort((a, b) => a.title.localeCompare(b.title));
                 break;
             case "Z-A":
-                tempProducts.sort((a, b) => b.name.localeCompare(a.name));
+                tempProducts.sort((a, b) => b.title.localeCompare(a.title));
                 break;
             default:
                 break;
         }
 
         setFilteredProducts(tempProducts);
-        setCurrentPage(1);
-    }, [category, priceRange, inStockOnly, showOutOfStock, sortOption]);
+        setCurrentPage(1); // Reset to first page on filter/sort change
+    }, [allProducts, category, priceRange, sortOption]);
 
     useEffect(() => {
         applyFiltersAndSort();
     }, [applyFiltersAndSort]);
+    
+    // Corrected function to get category counts from the fetched data
+    const getCategoryCounts = useCallback(() => {
+      const counts = {};
+      allProducts.forEach(product => {
+        if (product.category && product.category.name) {
+          const slug = slugify(product.category.name);
+          counts[slug] = (counts[slug] || 0) + 1;
+        }
+      });
+      return counts;
+    }, [allProducts]);
 
-    useEffect(() => {
-        const newMaxPrice = PRODUCTS.length > 0 ? Math.max(...PRODUCTS.map(p => p.price)) : 0;
-        setPriceRange([0, newMaxPrice]);
-        setInStockOnly(false);
-        setShowOutOfStock(false);
-        setSortOption("default");
-    }, [category]);
+    const categoryCounts = getCategoryCounts();
 
     const handlePriceChange = (values) => {
         setPriceRange(values);
     };
 
-    const handleInStockChange = (e) => {
-        setInStockOnly(e.target.checked);
-        if (e.target.checked) setShowOutOfStock(false);
-    };
-
-    const handleOutOfStockChange = (e) => {
-        setShowOutOfStock(e.target.checked);
-        if (e.target.checked) setInStockOnly(false);
-    };
-
     const handleReset = () => {
-        const newMaxPrice = PRODUCTS.length > 0 ? Math.max(...PRODUCTS.map(p => p.price)) : 0;
+        const newMaxPrice = allProducts.length > 0 ? Math.max(...allProducts.map(p => p.price)) : 1000;
         setPriceRange([0, newMaxPrice]);
-        setInStockOnly(false);
-        setShowOutOfStock(false);
+        setSortOption("default");
     };
 
     const handleSortClick = (event) => {
@@ -162,133 +169,147 @@ const AllProducts = () => {
     );
     const pageCount = Math.ceil(filteredProducts.length / productsPerPage);
 
-    const inStockCount = filteredProducts.filter(p => p.inStock).length;
-    const outOfStockCount = filteredProducts.filter(p => !p.inStock).length;
-
-    // This is the line that gets the correct banner
     const currentBanner = category && categoryBanners[category] ? categoryBanners[category] : defaultBanner;
 
     return (
-        <div className="container-fluid px-2 px-md-4 mt-8">
-            {/* Dynamic Banner Section */}
-            <div className="full-width-banner">
-                <div className="banner-content">
-                    <img
-                        src={currentBanner}
-                        alt={`${category} Banner`}
-                        className="banner-image"
-                    />
+        <div className="bg-gray-100 min-h-[calc(100vh-200px)]">
+            <div className="w-full h-48 sm:h-64 overflow-hidden relative mb-8">
+                <img
+                    src={currentBanner}
+                    alt={`${category} Banner`}
+                    className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                    <h1 className="text-4xl sm:text-5xl font-extrabold text-white text-center drop-shadow-lg uppercase">
+                        {category && category !== 'allproducts'
+                            ? category.replace(/-/g, " ")
+                            : "All Products"}
+                    </h1>
                 </div>
             </div>
 
-            <h1
-                className="font-bold mb-6"
-                style={{
-                    textAlign: "center",
-                    fontSize: "2rem",
-                    marginTop: "1rem",
-                    marginBottom: "2rem",
-                }}
-            >
-                {category && category !== 'allproducts'
-                    ? category.replace(/-/g, " ").toUpperCase()
-                    : "ALL PRODUCTS"}{" "}
-                ({filteredProducts.length})
-            </h1>
-            <div className="row">
-                {/* Sidebar */}
-                <div className="col-12 col-md-3 mb-4">
-                    <Sidebar
-                        selectedCategory={category}
-                        priceRange={priceRange}
-                        onPriceChange={handlePriceChange}
-                        inStockOnly={inStockOnly}
-                        showOutOfStock={showOutOfStock}
-                        onInStockChange={handleInStockChange}
-                        onOutOfStockChange={handleOutOfStockChange}
-                        handleReset={handleReset}
-                        categoryCounts={categoryCounts}
-                        inStockCount={inStockCount}
-                        outOfStockCount={outOfStockCount}
-                    />
-                </div>
-                {/* Products Section */}
-                <div className="col-12 col-md-9">
-                    <div
-                        className="d-flex align-items-center mb-4 flex-wrap"
-                        style={{
-                            justifyContent: "space-between",
-                            maxWidth: "1000px",
-                            margin: "0 auto",
-                        }}
-                    >
-                        <div className="flex space-x-2 mb-2 mb-md-0">
-                            <Button
-                                className={`p-2 rounded-md ${
-                                    productView === "list" && "bg-gray-200"
-                                    }`}
-                                onClick={() => setProductView("list")}
-                            >
-                                <IoIosMenu size={24} />
-                            </Button>
-                            <Button
-                                className={`p-2 rounded-md ${
-                                    productView === "grid" && "bg-gray-200"
-                                    }`}
-                                onClick={() => setProductView("grid")}
-                            >
-                                <TfiLayoutGrid4Alt size={24} />
-                            </Button>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <span className="text-gray-600">Sort by:</span>
-                            <Button onClick={handleSortClick} endIcon={<FaAngleDown />}>
-                                {sortOption === "default"
-                                    ? "Best selling"
-                                    : `Price: ${
-                                        sortOption === "price-low-to-high"
-                                            ? "Low to High"
-                                            : "High to Low"
-                                        }`}
-                            </Button>
-                            <Menu
-                                anchorEl={sortAnchorEl}
-                                open={openSortMenu}
-                                onClose={() => handleSortClose(sortOption)}
-                            >
-                                <MenuItem onClick={() => handleSortClose("default")}>
-                                    Best selling
-                                </MenuItem>
-                                <MenuItem onClick={() => handleSortClose("price-low-to-high")}>
-                                    Price: Low to High
-                                </MenuItem>
-                                <MenuItem onClick={() => handleSortClose("price-high-to-low")}>
-                                    Price: High to Low
-                                </MenuItem>
-                            </Menu>
-                        </div>
+            <div className="container mx-auto px-4 max-w-7xl">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <div className="lg:col-span-1">
+                        <Sidebar
+                            selectedCategory={category}
+                            priceRange={priceRange}
+                            onPriceChange={handlePriceChange}
+                            handleReset={handleReset}
+                            categoryCounts={categoryCounts} // Corrected prop
+                        />
                     </div>
-                    {filteredProducts.length > 0 ? (
-                        <>
-                            <div className={productView === 'grid' ? 'all-products-grid' : 'all-products-list'}>
+
+                    <div className="lg:col-span-3">
+                        <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex items-center justify-between flex-wrap">
+                            {loading ? (
+                                <span className="text-gray-600 text-sm">Loading...</span>
+                            ) : error ? (
+                                <span className="text-red-500 text-sm">Error: {error}</span>
+                            ) : (
+                                <span className="text-gray-600 text-sm">
+                                    Showing **{currentProducts.length}** of **{filteredProducts.length}** products
+                                </span>
+                            )}
+                            <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+                                <div className="flex space-x-2">
+                                    <button
+                                        className={`p-2 rounded-md transition-colors duration-200 ${productView === "list" ? "bg-gray-200 text-gray-800" : "bg-white text-gray-500 hover:bg-gray-100"}`}
+                                        onClick={() => setProductView("list")}
+                                    >
+                                        <IoIosMenu size={24} />
+                                    </button>
+                                    <button
+                                        className={`p-2 rounded-md transition-colors duration-200 ${productView === "grid" ? "bg-gray-200 text-gray-800" : "bg-white text-gray-500 hover:bg-gray-100"}`}
+                                        onClick={() => setProductView("grid")}
+                                    >
+                                        <TfiLayoutGrid4Alt size={24} />
+                                    </button>
+                                </div>
+                                <div className="relative">
+                                    <button
+                                        onClick={handleSortClick}
+                                        className="flex items-center px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <span className="mr-2">Sort by:</span>
+                                        <span className="font-semibold capitalize">
+                                            {sortOption.replace(/-/g, " ")}
+                                        </span>
+                                        <FaAngleDown className="ml-2" />
+                                    </button>
+                                    {openSortMenu && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                                            <ul className="py-1">
+                                                <li className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSortClose("default")}>Best selling</li>
+                                                <li className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSortClose("price-low-to-high")}>Price: Low to High</li>
+                                                <li className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSortClose("price-high-to-low")}>Price: High to Low</li>
+                                                <li className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSortClose("A-Z")}>Name: A-Z</li>
+                                                <li className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" onClick={() => handleSortClose("Z-A")}>Name: Z-A</li>
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {loading ? (
+                            <div className="text-center py-10">
+                                <p className="text-gray-500 text-lg">Loading products...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-10">
+                                <p className="text-red-500 text-lg">Error: {error}</p>
+                            </div>
+                        ) : filteredProducts.length > 0 ? (
+                            <div className={
+                                productView === 'grid'
+                                    ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                                    : "grid grid-cols-1 gap-6"
+                            }>
                                 {currentProducts.map((product) => (
-                                    <ProductItem key={product._id} product={product} itemView={productView} />
+                                    <ProductItem key={product.id} product={product} itemView={productView} />
                                 ))}
                             </div>
-                        </>
-                    ) : (
-                        <div className="col-12">
-                            <p>No products found matching your criteria.</p>
+                        ) : (
+                            <div className="text-center py-10">
+                                <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
+                            </div>
+                        )}
+
+                        <div className="flex justify-center mt-10">
+                            {filteredProducts.length > 0 && (
+                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                    <button
+                                        onClick={() => handlePageChange(null, currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                    >
+                                        <span className="sr-only">Previous</span>
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </button>
+                                    {Array.from({ length: pageCount }, (_, i) => i + 1).map((page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() => handlePageChange(null, page)}
+                                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
+                                                ? "z-10 bg-blue-50 border-blue-600 text-blue-600"
+                                                : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => handlePageChange(null, currentPage + 1)}
+                                        disabled={currentPage === pageCount}
+                                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                    >
+                                        <span className="sr-only">Next</span>
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </button>
+                                </nav>
+                            )}
                         </div>
-                    )}
-                    <div className="flex justify-center mt-8">
-                        <Pagination
-                            count={pageCount}
-                            page={currentPage}
-                            onChange={handlePageChange}
-                            color="primary"
-                            size="large"
-                        />
                     </div>
                 </div>
             </div>

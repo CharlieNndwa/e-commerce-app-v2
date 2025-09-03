@@ -1,148 +1,106 @@
 // src/components/Navigation/Navigation.js
 
-import Button from "@mui/material/Button";
+import React, { useState, useEffect, useRef } from "react";
 import { IoIosMenu } from "react-icons/io";
 import { FaAngleDown } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
-import { PRODUCTS } from "../../data/productsData";
+import { MdOutlineComputer, MdOutlineLocalGroceryStore, MdOutlineElectricalServices, MdOutlineHome } from "react-icons/md";
+import { GiManualMeatGrinder, GiTeapot, GiSodaCan, GiSnackBag } from "react-icons/gi";
+import { RiMickeyLine } from "react-icons/ri";
+import axios from 'axios';
+import { FaLaptop, FaTshirt, FaMobileAlt, FaTools, FaHome, FaDog, FaSeedling, FaUtensils, FaStar } from "react-icons/fa";
 
+// Add the slugify function here
 const slugify = (str) =>
-  str
-    .toLowerCase()
-    .replace(/,/g, "")
-    .replace(/&/g, "and")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim();
+    str
+        .toLowerCase()
+        .replace(/,/g, "")
+        .replace(/&/g, "and")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .trim();
 
-const navData = [
-  {
-    name: "Groceries",
-    path: "/products/groceries",
-    subMenu: [
-      { name: "Rice & Pasta", path: "/products/rice-pasta" },
-      { name: "Cereal & Breakfast", path: "/products/cereal-breakfast" },
-    ],
-  },
-  {
-    name: "Beverages",
-    path: "/products/beverages",
-    subMenu: [
-      { name: "Soft Drinks", path: "/products/soft-drinks" },
-      { name: "Energy Drinks", path: "/products/energy-drinks" },
-    ],
-  },
-  { name: "Snacks & Treats", path: "/products/snacks-treats" },
-  { name: "Home & Kitchen", path: "/products/home-kitchen" },
-  { name: "Personal Care", path: "/products/personal-care" },
-  { name: "Baby Care", path: "/products/baby-care" },
-  { name: "Alcohol", path: "/products/alcohol" },
-  { name: "Food Cupboard", path: "/products/food-cupboard" },
-  { name: "Pet Care", path: "/products/pet-care" },
-  { name: "Tea, Coffee & Hot Drinks", path: "/products/tea-coffee-hot-drinks" },
-];
+// Map Platzi API category names to icons
+const categoryIcons = {
+    'Electronics': <FaLaptop size={24} />,
+    'Clothes': <FaTshirt size={24} />,
+    'Shoes': <RiMickeyLine size={24} />,
+    'Miscellaneous': <FaStar size={24} />,
+    'Furniture': <FaHome size={24} />,
+    'Toys': <RiMickeyLine size={24} />,
+    'Other': <FaStar size={24} />,
+};
 
 const Navigation = ({ mobileNavOpen, closeMobileNav }) => {
-  const sidebarRef = useRef(null);
-  const location = useLocation();
+    const sidebarRef = useRef(null);
+    const location = useLocation();
+    const [categories, setCategories] = useState([]);
+    const [openSubMenu, setOpenSubMenu] = useState(null);
 
-  useEffect(() => {
-    // This effect runs whenever the sidebar is open
-    if (mobileNavOpen) {
-      const handleClickOutside = (event) => {
-        // Check if the click is outside the sidebar AND not on the hamburger button
-        if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-          // You need to add a check for the hamburger menu button here to prevent it from immediately closing the sidebar after opening it
-          // A simple way to do this is to check if the clicked element is part of the hamburger button
-          // This can be done with a class name or a specific data attribute
-          const isHamburgerButton = event.target.closest('.mobileHamburger');
-          if (!isHamburgerButton) {
-            closeMobileNav();
-          }
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await axios.get("https://api.escuelajs.co/api/v1/categories");
+                // The API can return duplicate categories, so we filter them by ID
+                const uniqueCategories = response.data.filter((category, index, self) =>
+                    index === self.findIndex((c) => (
+                        c.id === category.id
+                    ))
+                );
+                setCategories(uniqueCategories);
+            } catch (error) {
+                console.error("Failed to fetch categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const toggleSubMenu = (index) => {
+        setOpenSubMenu(openSubMenu === index ? null : index);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+                const isHamburgerButton = event.target.closest('.mobile-hamburger-btn');
+                if (!isHamburgerButton) {
+                    closeMobileNav();
+                }
+            }
+        };
+
+        if (mobileNavOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+            return () => {
+                document.removeEventListener("mousedown", handleClickOutside);
+                document.removeEventListener("touchstart", handleClickOutside);
+            };
         }
-      };
+    }, [mobileNavOpen, closeMobileNav]);
 
-      // Add the event listener to the document
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("touchstart", handleClickOutside); // For mobile touch events
-
-      // Clean up the event listener when the component unmounts or the sidebar closes
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-        document.removeEventListener("touchstart", handleClickOutside);
-      };
-    }
-  }, [mobileNavOpen, closeMobileNav]);
-
-  return (
-    <nav className="main-nav">
-      <div className="container">
-        <div className={`nav-items-wrapper ${window.innerWidth <= 768 ? "d-none" : ""}`}>
-          <ul className="main-nav-list">
-            <li className="main-nav-item">
-              <Link to="/" className="main-nav-link">
-                <span>Home</span>
-              </Link>
-            </li>
-            <li className="main-nav-item">
-              <Link to="/products/allproducts" className="main-nav-link">
-                <span>All Products</span>
-              </Link>
-            </li>
-            <li className="main-nav-item">
-              <Link to="/products/appliances" className="main-nav-link">
-                <span>Appliances</span>
-              </Link>
-            </li>
-            <li className="main-nav-item">
-              <Link to="/products/home-and-kitchen" className="main-nav-link">
-                <span>Home & Kitchen</span>
-              </Link>
-            </li>
-            <li className="main-nav-item">
-              <Link to="/products/electronics" className="main-nav-link">
-                <span>Electronics</span>
-              </Link>
-            </li>
-            <li className="main-nav-item">
-              <Link to="/products/groceries" className="main-nav-link">
-                <span>Grocery Picks</span>
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* Mobile Sidebar/Menu */}
-      <div ref={sidebarRef} className={`mobile-sidebar ${mobileNavOpen ? "open" : ""}`}>
-        <ul className="mobile-menu-list">
-          <li>
-            <Link to="/" onClick={closeMobileNav}>Home</Link>
-          </li>
-          <li>
-            <Link to="/products/allproducts" onClick={closeMobileNav}>All Products</Link>
-          </li>
-          {navData.map((category, index) => (
-            <li key={index}>
-              <Link to={category.path} onClick={closeMobileNav}>
-                {category.name}
-              </Link>
-              {category.subMenu && (
-                <ul className="mobile-submenu">
-                  {category.subMenu.map((sub, subIndex) => (
-                    <li key={subIndex}>
-                      <Link to={sub.path} onClick={closeMobileNav}>{sub.name}</Link>
-                    </li>
-                  ))}
+    return (
+        <nav className="hidden lg:block bg-gray-900 text-gray-200 py-3">
+            <div className="container mx-auto px-8">
+                <ul className="flex items-center justify-start space-x-8 font-medium">
+                    {categories.map((category) => (
+                        <li key={category.id} className="relative group">
+                            {/* Corrected Link to use slugified name */}
+                            <Link
+                                to={`/products/${slugify(category.name)}`}
+                                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                            >
+                                <div className="text-yellow-400">
+                                    {categoryIcons[category.name] || <FaStar size={24} />}
+                                </div>
+                                <span>{category.name}</span>
+                            </Link>
+                        </li>
+                    ))}
                 </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </nav>
-  );
+            </div>
+        </nav>
+    );
 };
 
 export default Navigation;
