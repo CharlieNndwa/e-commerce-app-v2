@@ -4,7 +4,7 @@ import { IoIosMenu } from "react-icons/io";
 import { TfiLayoutGrid4Alt } from "react-icons/tfi";
 import { FaAngleDown } from "react-icons/fa6";
 import Sidebar from "../../Components/SideBar";
-import ProductItem from "../../Components/ProductItem";
+import ProductItem from "../../Components/ProductItem"; // This component needs to be created
 import { fetchProducts } from "../../services/productService";
 
 // Import your dynamic banner images
@@ -119,17 +119,17 @@ const AllProducts = () => {
     useEffect(() => {
         applyFiltersAndSort();
     }, [applyFiltersAndSort]);
-    
+
     // Corrected function to get category counts from the fetched data
     const getCategoryCounts = useCallback(() => {
-      const counts = {};
-      allProducts.forEach(product => {
-        if (product.category && product.category.name) {
-          const slug = slugify(product.category.name);
-          counts[slug] = (counts[slug] || 0) + 1;
-        }
-      });
-      return counts;
+        const counts = {};
+        allProducts.forEach(product => {
+            if (product.category && product.category.name) {
+                const slug = slugify(product.category.name);
+                counts[slug] = (counts[slug] || 0) + 1;
+            }
+        });
+        return counts;
     }, [allProducts]);
 
     const categoryCounts = getCategoryCounts();
@@ -190,7 +190,8 @@ const AllProducts = () => {
 
             <div className="container mx-auto px-4 max-w-7xl">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    <div className="lg:col-span-1">
+                    {/* Sidebar container - becomes hidden on small screens and reappears on large screens */}
+                    <div className="lg:col-span-1 hidden lg:block">
                         <Sidebar
                             selectedCategory={category}
                             priceRange={priceRange}
@@ -200,18 +201,21 @@ const AllProducts = () => {
                         />
                     </div>
 
-                    <div className="lg:col-span-3">
-                        <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex items-center justify-between flex-wrap">
+                    {/* Main content grid */}
+                    <div className="lg:col-span-3 col-span-1">
+                        {/* Header for product count and view options */}
+                        <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between">
                             {loading ? (
                                 <span className="text-gray-600 text-sm">Loading...</span>
                             ) : error ? (
                                 <span className="text-red-500 text-sm">Error: {error}</span>
                             ) : (
-                                <span className="text-gray-600 text-sm">
+                                <span className="text-gray-600 text-sm mb-4 sm:mb-0">
                                     Showing **{currentProducts.length}** of **{filteredProducts.length}** products
                                 </span>
                             )}
-                            <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+                            <div className="flex items-center space-x-4">
+                                {/* View options */}
                                 <div className="flex space-x-2">
                                     <button
                                         className={`p-2 rounded-md transition-colors duration-200 ${productView === "list" ? "bg-gray-200 text-gray-800" : "bg-white text-gray-500 hover:bg-gray-100"}`}
@@ -226,6 +230,7 @@ const AllProducts = () => {
                                         <TfiLayoutGrid4Alt size={24} />
                                     </button>
                                 </div>
+                                {/* Sort dropdown */}
                                 <div className="relative">
                                     <button
                                         onClick={handleSortClick}
@@ -263,7 +268,7 @@ const AllProducts = () => {
                         ) : filteredProducts.length > 0 ? (
                             <div className={
                                 productView === 'grid'
-                                    ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                                    ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6"
                                     : "grid grid-cols-1 gap-6"
                             }>
                                 {currentProducts.map((product) => (
@@ -294,7 +299,7 @@ const AllProducts = () => {
                                             className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
                                                 ? "z-10 bg-blue-50 border-blue-600 text-blue-600"
                                                 : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                                            }`}
+                                                }`}
                                         >
                                             {page}
                                         </button>

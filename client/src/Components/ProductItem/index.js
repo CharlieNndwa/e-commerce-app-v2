@@ -75,10 +75,16 @@ const ProductItem = (props) => {
     if (!product) {
         return null;
     }
+    
+    // Fallback function for broken images
+    const imgFallback = (e) => {
+      e.target.onerror = null; // prevents infinite loop
+      e.target.src = "https://via.placeholder.com/200?text=No+Image";
+    };
 
     return (
         <article className={`bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 relative group
-            ${itemView === 'list' ? 'flex flex-col sm:flex-row items-center p-4' : 'flex flex-col'}`}>
+            ${itemView === 'list' ? 'flex flex-col sm:flex-row items-center p-4 gap-4' : 'flex flex-col'}`}>
 
             {/* Wishlist Button - Always visible */}
             <button
@@ -94,46 +100,46 @@ const ProductItem = (props) => {
             </button>
 
             {/* Product Image and link to details */}
-            <Link to={`/product/${product.id}`} className="block w-full">
-                <div className={`relative overflow-hidden ${itemView === 'list' ? 'w-full sm:w-1/3 flex-shrink-0' : 'w-full h-52'}`}>
+            <Link to={`/product/${product.id}`} className={`block ${itemView === 'list' ? 'w-full sm:w-1/3 flex-shrink-0' : 'w-full'}`}>
+                <div className={`relative overflow-hidden h-48 sm:h-52`}>
                     <img
                         src={product.images[0]}
-                        className={`w-full h-full object-contain transition-transform duration-300 group-hover:scale-105
-                            ${itemView === 'list' ? 'p-2' : ''}`}
+                        className={`w-full h-full object-contain transition-transform duration-300 group-hover:scale-105`}
                         alt={product.title}
+                        onError={imgFallback}
                     />
                 </div>
             </Link>
 
-            <div className={`p-4 ${itemView === 'list' ? 'flex-grow sm:ml-4' : ''}`}>
-                {/* Product Name (Title) */}
-                <h4 className="text-base font-semibold text-gray-800 mb-1 leading-tight">{product.title}</h4>
+            <div className={`p-4 flex-grow flex flex-col justify-between ${itemView === 'list' ? 'sm:ml-4' : ''}`}>
+                <div>
+                    {/* Product Name (Title) */}
+                    <h4 className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2">{product.title}</h4>
 
-                {/* Rating (Placeholder) */}
-                <div className="flex items-center space-x-2 mb-2">
-                    <Rating
-                        name="read-only"
-                        value={placeholderRating}
-                        readOnly
-                        size="small"
-                        precision={0.5}
-                    />
-                    <span className="text-xs text-gray-500">({placeholderRating})</span>
+                    {/* Rating (Placeholder) */}
+                    <div className="flex items-center space-x-2 my-2">
+                        <Rating
+                            name="read-only"
+                            value={placeholderRating}
+                            readOnly
+                            size="small"
+                            precision={0.5}
+                        />
+                        <span className="text-xs text-gray-500">({placeholderRating})</span>
+                    </div>
                 </div>
 
-                {/* Price */}
-                <div className="flex items-baseline mb-2">
-                    <span className="text-xl font-bold text-gray-900">R{product.price.toFixed(2)}</span>
+                {/* Price and Add to Cart Button */}
+                <div className="flex flex-col items-start mt-auto">
+                    <span className="text-lg font-bold text-gray-900">R{product.price.toFixed(2)}</span>
+                    <button
+                        onClick={() => context.addToCart(product)}
+                        className={`mt-2 w-full flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200
+                        bg-purple-600 text-white hover:bg-purple-700`}
+                    >
+                        <BsCart4 size={18} className="mr-2" /> ADD TO CART
+                    </button>
                 </div>
-
-                {/* Add to Cart Button */}
-                <button
-                    onClick={() => context.addToCart(product)}
-                    className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200
-                        bg-purple-600 text-white hover:bg-purple-700 mt-2`}
-                >
-                    <BsCart4 size={18} className="mr-2" /> ADD TO CART
-                </button>
             </div>
         </article>
     );

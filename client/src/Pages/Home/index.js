@@ -45,18 +45,6 @@ const Home = () => {
         visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
     };
 
-    const categoryLinkVariants = {
-        hidden: { opacity: 0, x: -20 },
-        visible: i => ({
-            opacity: 1,
-            x: 0,
-            transition: {
-                delay: i * 0.1,
-                duration: 0.5
-            }
-        })
-    };
-
     const productCarouselVariants = {
         hidden: { opacity: 0, scale: 0.95 },
         visible: { opacity: 1, scale: 1, transition: { duration: 0.6 } }
@@ -66,41 +54,6 @@ const Home = () => {
         <div className="bg-gray-50 min-h-screen">
             <HomeBanner />
             <HomeCat />
-
-        
-            {/* <motion.section
-                className="py-12 bg-white"
-                initial="hidden"
-                animate="visible"
-                variants={sectionVariants}
-            >
-                <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-bold text-gray-800 text-center mb-10">Shop by Category</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                        {categoryList.slice(0, 6).map((cat, i) => (
-                            <motion.div
-                                key={cat.id}
-                                className="relative group overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-                                custom={i}
-                                initial="hidden"
-                                animate="visible"
-                                variants={categoryLinkVariants}
-                            >
-                                <Link to={`/products/${cat.id}`}>
-                                    <img
-                                        src={cat.image}
-                                        alt={cat.name}
-                                        className="w-full h-40 object-cover rounded-xl transition-transform duration-500 group-hover:scale-110"
-                                    />
-                                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center transition-opacity duration-300 group-hover:bg-opacity-60">
-                                        <h4 className="text-white text-lg font-semibold text-center p-2">{cat.name}</h4>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </motion.section> */}
 
             <hr className="my-10 border-gray-200" />
 
@@ -113,8 +66,11 @@ const Home = () => {
             >
                 <div className="container mx-auto px-4">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-gray-800">Weekly Deals</h2>
-                        <Link to="/allproducts" className="text-blue-600 font-semibold hover:underline transition-colors">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Weekly Deals</h2>
+                        <Link
+                            to="/allproducts"
+                            className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                        >
                             View All &rarr;
                         </Link>
                     </div>
@@ -175,8 +131,11 @@ const Home = () => {
             >
                 <div className="container mx-auto px-4">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-3xl font-bold text-gray-800">Featured Products</h2>
-                        <Link to="/allproducts" className="text-blue-600 font-semibold hover:underline transition-colors">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Featured Products</h2>
+                        <Link
+                            to="/allproducts"
+                            className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                        >
                             View All &rarr;
                         </Link>
                     </div>
@@ -212,7 +171,7 @@ const Home = () => {
             </section>
 
             <hr className="my-10 border-gray-200" />
-            
+
             {/* "Recently Viewed" Section (Simulated) */}
             <motion.section
                 className="py-12 bg-gray-50"
@@ -221,7 +180,7 @@ const Home = () => {
                 variants={sectionVariants}
             >
                 <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-bold text-gray-800 text-center mb-8">Recently Viewed Products</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 text-center mb-8">Recently Viewed Products</h2>
                     <motion.div variants={productCarouselVariants}>
                         <Swiper
                             slidesPerView={1}
